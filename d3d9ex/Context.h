@@ -41,8 +41,10 @@ public:
 	~MainContext();
 
 	bool ApplyPresentationParameters(D3DPRESENT_PARAMETERS* pPresentationParameters);
-	bool ApplyBehaviorFlagsFix(DWORD* flags);
-	bool ApplyVertexBufferFix(UINT& Length, DWORD& Usage, DWORD& FVF, D3DPOOL& Pool);
+//	bool ApplyBehaviorFlagsFix(DWORD* flags);
+	bool ApplyVertexBufferFix(UINT& Length, DWORD& Usage, DWORD& FVF, D3DPOOL& Pool, IDirect3DVertexBuffer9** ppVertexBuffer);
+	void A17_ResetCallback();
+	IDirect3DVertexBuffer9 ** MainContext::get_Atelier_Sophie_VB();
 	bool BehaviorFlagsToString(DWORD BehaviorFlags, std::string* BehaviorFlagsString);
 
 	bool CheckWindow(HWND hWnd);
@@ -58,14 +60,25 @@ private:
 		NONE = 0,
 		RESIDENT_EVIL_4,
 		KINGS_BOUNTY_LEGEND,
-		FINAL_FANTASY_XIII
+		FINAL_FANTASY_XIII,
+		ATELIER_SOPHIE
+	};
+	enum WindowMode : u32
+	{
+		UNKNOWN = 0,
+		FULLSCREEN,
+		WINDOWED,
+		BORDERLESS
 	};
 
 	void EnableAutoFix();
-	AutoFixes autofix = AutoFixes::NONE;
+	AutoFixes autofix;
+	unsigned int fixFlags;
+	WindowMode windowmode;
+	IDirect3DVertexBuffer9** theVertexBuffer;
 
 	void FixBehaviorFlagConflict(const DWORD flags_in, DWORD* flags_out);
-	static const std::map<const AutoFixes, const uint32_t> behaviorflags_fixes;
+//	static const std::map<const AutoFixes, const uint32_t> behaviorflags_fixes;
 
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	WNDPROC oldWndProc;

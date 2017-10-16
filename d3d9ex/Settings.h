@@ -12,9 +12,9 @@ SETTING(u32, LongValue, VendorId, Adapter, 0);
 SETTING(u32, LongValue, DeviceId, Adapter, 0);
 
 SETTING(bool, BoolValue, Borderless, Borderless, false);
-SETTING(bool, BoolValue, ForceWindowedMode, Borderless, false);
+SETTING(bool, BoolValue, ForceWindowedMode, Borderless, true);
 SETTING(bool, BoolValue, AllWindows, Borderless, false);
 SETTING(bool, BoolValue, TopMost, Borderless, false);
-SETTING(std::wstring, StringValue, WindowClass, Borderless, L"");
+SETTING(std::wstring, StringValue, WindowClass, Borderless, L"ElixirFramework");
 SETTING(std::wstring, StringValue, WindowName, Borderless, L"");
 

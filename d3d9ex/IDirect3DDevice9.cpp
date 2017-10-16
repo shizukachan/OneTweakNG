@@ -124,9 +124,32 @@ UINT APIENTRY hkIDirect3DDevice9::GetNumberOfSwapChains() {
 
 HRESULT APIENTRY hkIDirect3DDevice9::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
 	PrintLog("hkIDirect3DDevice9::Reset");
-
+	IDirect3DVertexBuffer9 ** boom = context.get_Atelier_Sophie_VB();
+	unsigned char *vb;
+	if (boom)
+	{
+		vb = (unsigned char*)malloc(2800000);
+		void *vbsrc;
+		(*boom)->Lock(0,0,&vbsrc,0);
+		memcpy(vb,vbsrc,2800000);
+		(*boom)->Unlock();
+		context.A17_ResetCallback();
+	}
 	context.ApplyPresentationParameters(pPresentationParameters);
-	return m_pWrapped->Reset(pPresentationParameters);
+	HRESULT retVal = m_pWrapped->Reset(pPresentationParameters);
+	if (boom)
+	{
+		m_pWrapped->CreateVertexBuffer(2800000,D3DUSAGE_DYNAMIC,0,D3DPOOL_DEFAULT,boom,0);
+		void *vbdst;
+		(*boom)->Lock(0,0,&vbdst,0);
+		memcpy(vbdst,vb,2800000);
+		(*boom)->Unlock();
+		free(vb);
+		//PrintLog("* hkIDirect3DDevice9::CreateVertexBuffer %08u %x %x %x %p %p", 2800000, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, boom, 0);
+		PrintLog("Vertex Buffer fix for \"Atelier Sophie\" re-applied");
+		//ExitProcess(0);
+	}
+	return retVal;
 }
 
 HRESULT APIENTRY hkIDirect3DDevice9::Present(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) {
@@ -175,8 +198,8 @@ HRESULT APIENTRY hkIDirect3DDevice9::CreateCubeTexture(UINT EdgeLength, UINT Lev
 }
 
 HRESULT APIENTRY hkIDirect3DDevice9::CreateVertexBuffer(UINT Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pSharedHandle) {
-	//PrintLog("hkIDirect3DDevice9::CreateVertexBuffer %08u %x %x %x %p %p", Length, Usage, FVF, Pool, ppVertexBuffer, pSharedHandle);
-	context.ApplyVertexBufferFix(Length, Usage, FVF, Pool);
+//	PrintLog("hkIDirect3DDevice9::CreateVertexBuffer %08u %x %x %x %p %p", Length, Usage, FVF, Pool, ppVertexBuffer, pSharedHandle);
+	context.ApplyVertexBufferFix(Length, Usage, FVF, Pool, ppVertexBuffer);
 	return m_pWrapped->CreateVertexBuffer(Length, Usage, FVF, Pool, ppVertexBuffer, pSharedHandle);
 }
 

@@ -15,11 +15,11 @@
 #include <windows.h>
 
 #include <stdint.h>
-#include <inttypes.h>
+//#include <inttypes.h>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include <mutex>
+//#include <mutex>
 #include <memory>
 #include <array>
 #include <vector>

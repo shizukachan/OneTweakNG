@@ -39,10 +39,13 @@ Config::Config()
 
 MainContext::MainContext()
 {
+	autofix = (AutoFixes) 0;
+	windowmode = (WindowMode) 0;
 	LogFile("OneTweakNG.log");
 
 	if(config.GetAutoFix()) EnableAutoFix();
-
+	fixFlags = 0;
+	theVertexBuffer = 0;
 	MH_Initialize();
 
 	MH_CreateHook(D3D9DLL::Get().Direct3DCreate9, HookDirect3DCreate9, reinterpret_cast<void**>(&TrueDirect3DCreate9));
@@ -130,19 +133,61 @@ bool MainContext::ApplyPresentationParameters(D3DPRESENT_PARAMETERS* pPresentati
 
 		if (config.GetBorderless())
 		{
-			int cx = GetSystemMetrics(SM_CXSCREEN);
-			int cy = GetSystemMetrics(SM_CYSCREEN);
-
-			SetWindowPos(pPresentationParameters->hDeviceWindow, HWND_TOP, 0, 0, cx, cy, SWP_SHOWWINDOW | SWP_NOCOPYBITS | SWP_NOSENDCHANGING);
-
-			if (config.GetForceWindowedMode())
+			if (pPresentationParameters->Windowed != TRUE)
 			{
-				pPresentationParameters->SwapEffect = pPresentationParameters->MultiSampleType == D3DMULTISAMPLE_NONE ? D3DSWAPEFFECT_DISCARD : D3DSWAPEFFECT_FLIP;
-				pPresentationParameters->Windowed = TRUE;
-				pPresentationParameters->FullScreen_RefreshRateInHz = 0;
-				PrintLog("ForceWindowedMode");
+				windowmode = BORDERLESS;
+				int cx = GetSystemMetrics(SM_CXSCREEN);
+				int cy = GetSystemMetrics(SM_CYSCREEN);
+
+				LONG_PTR dwStyle = GetWindowLongPtr(pPresentationParameters->hDeviceWindow, GWL_STYLE);
+				LONG_PTR dwExStyle = GetWindowLongPtr(pPresentationParameters->hDeviceWindow, GWL_EXSTYLE);
+
+				DWORD new_dwStyle = dwStyle & ~WS_OVERLAPPEDWINDOW;
+				DWORD new_dwExStyle = dwExStyle & ~(WS_EX_OVERLAPPEDWINDOW);
+
+				context.TrueSetWindowLongW(pPresentationParameters->hDeviceWindow, GWL_STYLE, new_dwStyle);
+				context.TrueSetWindowLongW(pPresentationParameters->hDeviceWindow, GWL_EXSTYLE, new_dwExStyle);
+
+				SetWindowPos(pPresentationParameters->hDeviceWindow, HWND_TOP, 0, 0, cx, cy, SWP_SHOWWINDOW | SWP_NOCOPYBITS | SWP_NOSENDCHANGING);
+
+				PrintLog("pPresentationParameters->hDeviceWindow 0x%p: Borderless dwStyle: %lX->%lX", pPresentationParameters->hDeviceWindow, dwStyle, new_dwStyle);
+				PrintLog("pPresentationParameters->hDeviceWindow 0x%p: Borderless dwExStyle: %lX->%lX", pPresentationParameters->hDeviceWindow, dwExStyle, new_dwExStyle);
+				MessageBeep(MB_ICONASTERISK);
+
+				if (config.GetForceWindowedMode())
+				{
+					pPresentationParameters->SwapEffect = pPresentationParameters->MultiSampleType == D3DMULTISAMPLE_NONE ? D3DSWAPEFFECT_DISCARD : D3DSWAPEFFECT_FLIP;
+					pPresentationParameters->Windowed = TRUE;
+					pPresentationParameters->FullScreen_RefreshRateInHz = 0;
+					PrintLog("ForceWindowedMode");
+				}
+			}
+			else
+			{
+				PrintLog("AlreadyWindowedMode");
+move_windowed:
+				windowmode = WINDOWED;
+				PrintLog("DX CreateDevice: %ux%u",pPresentationParameters->BackBufferWidth, pPresentationParameters->BackBufferHeight);
+				RECT rec;
+				GetWindowRect(pPresentationParameters->hDeviceWindow,&rec);
+				int cx = GetSystemMetrics(SM_CXSCREEN);
+				int cy = GetSystemMetrics(SM_CYSCREEN);
+				cy = (cy - (rec.bottom - rec.top))/2;
+				cx = (cx - (rec.right - rec.left))/2;
+				SetWindowPos(pPresentationParameters->hDeviceWindow, HWND_TOP, cx, cy, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOCOPYBITS | SWP_NOSENDCHANGING);
 			}
 		}
+		else
+		{
+			if (pPresentationParameters->Windowed == TRUE)
+			{
+				goto move_windowed;
+			}
+			else //if (pPresentationParameters->Windowed != TRUE)
+				windowmode = FULLSCREEN;
+		}
+
+		PrintLog("Window Mode: %d",windowmode);
 
 		if (config.GetHideCursor()) while (::ShowCursor(FALSE) >= 0); // ShowCursor < 0 -> hidden
 
@@ -158,9 +203,8 @@ bool MainContext::CheckWindow(HWND hWnd)
 
 	GetClassNameW(hWnd, className.get(), MAX_PATH);
 	GetWindowTextW(hWnd, windowName.get(), MAX_PATH);
-
+	
 	PrintLog("HWND 0x%p: ClassName \"%ls\", WindowName: \"%ls\"", hWnd, className.get(), windowName.get());
-
 	bool class_found = config.GetWindowClass().compare(className.get()) == 0;
 	bool window_found = config.GetWindowName().compare(windowName.get()) == 0;
 	bool force = config.GetAllWindows();
@@ -178,7 +222,7 @@ void MainContext::ApplyWndProc(HWND hWnd)
 
 void MainContext::ApplyBorderless(HWND hWnd)
 {
-	if (config.GetBorderless())
+/*	if (config.GetBorderless())
 	{
 		LONG_PTR dwStyle = GetWindowLongPtr(hWnd, GWL_STYLE);
 		LONG_PTR dwExStyle = GetWindowLongPtr(hWnd, GWL_EXSTYLE);
@@ -197,7 +241,7 @@ void MainContext::ApplyBorderless(HWND hWnd)
 		PrintLog("HWND 0x%p: Borderless dwStyle: %lX->%lX", hWnd, dwStyle, new_dwStyle);
 		PrintLog("HWND 0x%p: Borderless dwExStyle: %lX->%lX", hWnd, dwExStyle, new_dwExStyle);
 		MessageBeep(MB_ICONASTERISK);
-	}
+	}*/
 }
 
 LRESULT CALLBACK MainContext::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

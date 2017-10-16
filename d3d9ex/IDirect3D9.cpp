@@ -123,10 +123,10 @@ HRESULT APIENTRY hkIDirect3D9::CreateDevice(UINT Adapter, D3DDEVTYPE DeviceType,
 		BehaviorFlags = context.config.GetBehaviorFlags();
 		PrintLog("Advanced Mode: BehaviorFlags set");
 	}
-	else
-	{
-		context.ApplyBehaviorFlagsFix(&BehaviorFlags);
-	}
+//	else
+//	{
+//		context.ApplyBehaviorFlagsFix(&BehaviorFlags);
+//	}
 
 	if (hFocusWindow == NULL) hFocusWindow = pPresentationParameters->hDeviceWindow;
 	context.ApplyPresentationParameters(pPresentationParameters);
